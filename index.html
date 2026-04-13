@@ -18,7 +18,7 @@
             --btn-hover: #071a2d;
             --tag-bg: #E2E8F0;
             --tag-text: #1A202C;
-            --section-tag-bg: #0A2540; /* Navy for Section Tag */
+            --section-tag-bg: #0A2540;
             --section-tag-text: #FFFFFF;
             --modal-overlay: rgba(10, 37, 64, 0.7);
         }
@@ -36,7 +36,7 @@
             --btn-hover: #172A45;
             --tag-bg: #172A45;
             --tag-text: #8892B0;
-            --section-tag-bg: #FF9900; /* Orange for Section Tag in Dark Mode */
+            --section-tag-bg: #FF9900;
             --section-tag-text: #020C1B;
             --modal-overlay: rgba(0, 0, 0, 0.85);
         }
@@ -160,7 +160,7 @@
         .playbook-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
         body.dark-mode .playbook-card { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
 
-        .card-header-wrapper { display: flex; flex-direction: column; gap: 8px; padding-right: 25px; }
+        .card-header-wrapper { display: flex; flex-direction: column; gap: 8px; padding-right: 50px; } /* Increased right padding for 2 buttons */
         .playbook-card h3 { margin: 0; color: var(--primary); font-size: 1.15rem; transition: color 0.3s ease; }
 
         /* Tags Formatting */
@@ -176,12 +176,18 @@
 
         .card-data-store { display: none; }
 
-        .delete-btn {
-            position: absolute; top: 15px; right: 15px; background: transparent; color: var(--text-muted);
-            font-size: 1.2rem; padding: 0; width: 24px; height: 24px; display: flex;
-            align-items: center; justify-content: center; line-height: 1; z-index: 10;
+        /* Card Action Buttons (Edit / Delete) */
+        .card-actions {
+            position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 10;
         }
-        .delete-btn:hover { color: #dc3545; }
+        .action-btn {
+            background: transparent; color: var(--text-muted); font-size: 1.1rem; padding: 0; width: 24px; height: 24px;
+            display: flex; align-items: center; justify-content: center; line-height: 1; border: none; cursor: pointer;
+            transition: color 0.2s ease, transform 0.1s ease;
+        }
+        .action-btn:hover { transform: scale(1.1); }
+        .action-btn.edit-btn:hover { color: var(--secondary); }
+        .action-btn.delete-btn:hover { color: #dc3545; }
 
         /* --- Floating Window (Modal) Styling --- */
         .modal-overlay {
@@ -236,7 +242,7 @@
         </div>
         <div class="header-actions">
             <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn" title="Toggle Theme">🌙</button>
-            <button class="open-menu-btn" onclick="openDrawer()">+ Add Entry</button>
+            <button class="open-menu-btn" onclick="openAddDrawer()">+ Add Entry</button>
         </div>
     </div>
 
@@ -259,7 +265,7 @@
 
     <div class="side-drawer" id="sideDrawer">
         <div class="drawer-header">
-            <h2>New Playbook Entry</h2>
+            <h2 id="drawer-title">New Playbook Entry</h2>
             <button class="close-btn" onclick="closeDrawer()">✖</button>
         </div>
         <div class="drawer-body">
@@ -295,7 +301,7 @@
                 <textarea id="field3" placeholder="- Increase the TCPA by 10-15%..."></textarea>
             </div>
 
-            <button class="add-btn" onclick="addPlaybookItem()">Add to Grid</button>
+            <button class="add-btn" id="drawer-action-btn" onclick="addPlaybookItem()">Add to Grid</button>
         </div>
     </div>
 
@@ -317,7 +323,10 @@
         <div id="playbook-list">
             
             <div class="playbook-card" data-section="Optimization Playbook" data-tag="Troubleshooting" onclick="openModal(this)">
-                <button class="delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                <div class="card-actions">
+                    <button class="action-btn edit-btn" onclick="openEditDrawer(event, this)" title="Edit Entry">✏️</button>
+                    <button class="action-btn delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                </div>
                 <div class="card-header-wrapper">
                     <h3>UAC Campaign Scaled Down</h3>
                     <div class="tags-wrapper">
@@ -344,7 +353,10 @@ Check from which day did the scale down start.</div>
             </div>
             
             <div class="playbook-card" data-section="Campaign Launch" data-tag="UAC Setup" onclick="openModal(this)">
-                <button class="delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                <div class="card-actions">
+                    <button class="action-btn edit-btn" onclick="openEditDrawer(event, this)" title="Edit Entry">✏️</button>
+                    <button class="action-btn delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                </div>
                 <div class="card-header-wrapper">
                     <h3>Campaign Level Architecture</h3>
                     <div class="tags-wrapper">
@@ -373,7 +385,10 @@ Brand Term Negation</div>
             </div>
 
             <div class="playbook-card" data-section="Analytical Strategy" data-tag="Cross-Channel" onclick="openModal(this)">
-                <button class="delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                <div class="card-actions">
+                    <button class="action-btn edit-btn" onclick="openEditDrawer(event, this)" title="Edit Entry">✏️</button>
+                    <button class="action-btn delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                </div>
                 <div class="card-header-wrapper">
                     <h3>Audience Overlap Analysis</h3>
                     <div class="tags-wrapper">
@@ -402,6 +417,7 @@ Brand Term Negation</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', updateFilterDropdowns);
+        let currentlyEditingCard = null; // Keeps track of the card being edited
 
         function toggleTheme() {
             const body = document.body;
@@ -418,6 +434,112 @@ Brand Term Negation</div>
         function closeDrawer() {
             document.getElementById('sideDrawer').classList.remove('open');
             document.getElementById('overlay').classList.remove('active');
+        }
+
+        // Resets the drawer inputs and sets it back to "Add Mode"
+        function resetDrawerState() {
+            document.getElementById('drawer-title').innerText = "New Playbook Entry";
+            const actionBtn = document.getElementById('drawer-action-btn');
+            actionBtn.innerText = "Add to Grid";
+            actionBtn.onclick = addPlaybookItem;
+            currentlyEditingCard = null;
+
+            document.getElementById('entry-name').value = '';
+            document.getElementById('entry-tag').value = '';
+            document.getElementById('field1').value = '';
+            document.getElementById('field2').value = '';
+            document.getElementById('field3').value = '';
+            updateFormLabels();
+        }
+
+        // Wrapper for opening the drawer in "Add Mode"
+        function openAddDrawer() {
+            resetDrawerState();
+            openDrawer();
+        }
+
+        // Opens the drawer in "Edit Mode"
+        function openEditDrawer(event, btnElement) {
+            event.stopPropagation(); // Stop the card modal from opening
+            
+            currentlyEditingCard = btnElement.closest('.playbook-card');
+
+            // Extract values from the selected card
+            const section = currentlyEditingCard.getAttribute('data-section');
+            const tag = currentlyEditingCard.getAttribute('data-tag');
+            const title = currentlyEditingCard.querySelector('h3').innerText;
+
+            const sections = currentlyEditingCard.querySelectorAll('.card-section');
+            const val1Html = sections[0].querySelector('.card-content').innerHTML;
+            const val2Html = sections[1].querySelector('.card-content').innerHTML;
+            const val3Html = sections[2].querySelector('.card-content').innerHTML;
+
+            const val1 = val1Html === '<em>None specified</em>' ? '' : sections[0].querySelector('.card-content').innerText;
+            const val2 = val2Html === '<em>None specified</em>' ? '' : sections[1].querySelector('.card-content').innerText;
+            const val3 = val3Html === '<em>None specified</em>' ? '' : sections[2].querySelector('.card-content').innerText;
+
+            // Populate Form
+            document.getElementById('template-type').value = section;
+            updateFormLabels(); // Dynamically change labels to match
+            document.getElementById('entry-name').value = title;
+            document.getElementById('entry-tag').value = tag;
+            document.getElementById('field1').value = val1;
+            document.getElementById('field2').value = val2;
+            document.getElementById('field3').value = val3;
+
+            // Change Drawer UI to "Edit Mode"
+            document.getElementById('drawer-title').innerText = "Edit Playbook Entry";
+            const actionBtn = document.getElementById('drawer-action-btn');
+            actionBtn.innerText = "Save Changes";
+            actionBtn.onclick = saveEditedItem;
+
+            openDrawer();
+        }
+
+        // Saves the changes back to the active card
+        function saveEditedItem() {
+            if (!currentlyEditingCard) return;
+
+            const sectionVal = document.getElementById('template-type').value;
+            const nameVal = document.getElementById('entry-name').value.trim();
+            const tagVal = document.getElementById('entry-tag').value.trim() || 'General'; 
+            
+            const lbl1 = document.getElementById('lbl-field1').innerText;
+            const val1 = document.getElementById('field1').value.trim();
+            const lbl2 = document.getElementById('lbl-field2').innerText;
+            const val2 = document.getElementById('field2').value.trim();
+            const lbl3 = document.getElementById('lbl-field3').innerText;
+            const val3 = document.getElementById('field3').value.trim();
+
+            if (!nameVal || !val1) {
+                alert("Please provide at least an Entry Name and fill the first field.");
+                return;
+            }
+
+            // Update Card Dataset & HTML attributes
+            currentlyEditingCard.setAttribute('data-section', sectionVal);
+            currentlyEditingCard.setAttribute('data-tag', tagVal);
+
+            currentlyEditingCard.querySelector('h3').innerText = nameVal;
+            const tags = currentlyEditingCard.querySelectorAll('.tag-badge');
+            tags[0].innerText = sectionVal;
+            tags[1].innerText = tagVal;
+
+            // Update Hidden Card Content
+            const contentSections = currentlyEditingCard.querySelectorAll('.card-section');
+            contentSections[0].querySelector('.card-title').innerText = lbl1;
+            contentSections[0].querySelector('.card-content').innerHTML = escapeHTML(val1);
+
+            contentSections[1].querySelector('.card-title').innerText = lbl2;
+            contentSections[1].querySelector('.card-content').innerHTML = escapeHTML(val2) || '<em>None specified</em>';
+
+            contentSections[2].querySelector('.card-title').innerText = lbl3;
+            contentSections[2].querySelector('.card-content').innerHTML = escapeHTML(val3) || '<em>None specified</em>';
+
+            updateFilterDropdowns();
+            filterGrid();
+            closeDrawer();
+            resetDrawerState(); // Reset back to add mode
         }
 
         // --- Dynamic Form Labels based on Section Selection ---
@@ -530,7 +652,7 @@ Brand Term Negation</div>
             if (pwd === null) return; 
 
             if (pwd === atob("QXJpc3RvazIwMjY=")) {
-                buttonElement.parentElement.remove();
+                buttonElement.closest('.playbook-card').remove();
                 updateFilterDropdowns(); 
             } else {
                 alert("Incorrect password. Deletion cancelled.");
@@ -563,7 +685,10 @@ Brand Term Negation</div>
             cardElement.onclick = function() { openModal(this) }; 
             
             cardElement.innerHTML = `
-                <button class="delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                <div class="card-actions">
+                    <button class="action-btn edit-btn" onclick="openEditDrawer(event, this)" title="Edit Entry">✏️</button>
+                    <button class="action-btn delete-btn" onclick="confirmDelete(event, this)" title="Remove Entry">✖</button>
+                </div>
                 <div class="card-header-wrapper">
                     <h3>${escapeHTML(nameVal)}</h3>
                     <div class="tags-wrapper">
@@ -590,15 +715,10 @@ Brand Term Negation</div>
 
             listContainer.insertBefore(cardElement, listContainer.firstChild);
 
-            document.getElementById('entry-name').value = '';
-            document.getElementById('entry-tag').value = '';
-            document.getElementById('field1').value = '';
-            document.getElementById('field2').value = '';
-            document.getElementById('field3').value = '';
-
             updateFilterDropdowns();
             filterGrid();
             closeDrawer();
+            resetDrawerState();
         }
 
         function escapeHTML(str) {
